@@ -118,6 +118,23 @@ def get_tags():
         tags[tag['Key']] = tag['Value']
     config.add_config('instance_tags', tags)
 
+def get_web_conf():
+    conf_url = None
+    udata = config.instance_userdata
+    if isinstance(udata, dict):
+        conf_url = udata.get('conf_url')
+    if conf_url is None:
+        conf_url = config.instance_tags.get('conf_url')
+    if conf_url is None:
+        return
+    if '?' not in conf_url:
+        conf_url = '?'.join([conf_url, config.instance_metadata.instance_id])
+    r = requests.get(conf_url)
+    if r.status_code != 200:
+        return
+    data = r.json()
+    config.update(data)
+
 try:
     get_metadata()
 except RequestException:
@@ -132,3 +149,4 @@ awsconfig.build_config_file()
 
 get_userdata()
 get_tags()
+get_web_conf()
