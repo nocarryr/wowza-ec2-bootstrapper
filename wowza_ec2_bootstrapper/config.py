@@ -109,7 +109,7 @@ def get_userdata():
     
 def get_tags():
     if not config.is_ec2_instance:
-        config.instance_tags = None
+        config.instance_tags = {}
         return
     ec2 = boto3.resource('ec2')
     instobj = ec2.Instance(config.instance_metadata.instance_id)
