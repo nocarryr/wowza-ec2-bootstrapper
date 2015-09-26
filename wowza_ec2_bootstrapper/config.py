@@ -126,5 +126,9 @@ except HTTPError:
     config.is_ec2_instance = False
 else:
     config.is_ec2_instance = True
+
+from wowza_ec2_bootstrapper import awsconfig
+awsconfig.build_config_file()
+
 get_userdata()
 get_tags()
