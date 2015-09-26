@@ -115,7 +115,7 @@ def get_tags():
     instobj = ec2.Instance(config.instance_metadata.instance_id)
     tags = {}
     for tag in instobj.tags:
-        tags[tag.key] = tag.value
+        tags[tag['Key']] = tag['Value']
     config.add_config('instance_tags', tags)
 
 try:
