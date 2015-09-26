@@ -21,7 +21,8 @@ class Config(object):
     def __getattr__(self, attr):
         if hasattr(self, '_data') and attr in self._data:
             return self._data[attr]
-        return super(Config, self).__getattr__(attr)
+        raise AttributeError('%r object has no attribute %r' %
+                             (self.__class__, attr))
     def __setattr__(self, attr, item):
         if attr == '_data':
             super(Config, self).__setattr__(attr, item)
