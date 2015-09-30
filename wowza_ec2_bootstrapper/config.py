@@ -7,6 +7,14 @@ from requests.exceptions import RequestException
 from requests.packages.urllib3.exceptions import HTTPError
 
 class Config(object):
+    _base_config_tree = dict(
+        instance_metadata={}, 
+        instance_tags={}, 
+        wowza={
+            'root_path':'/usr/local/WowzaStreamingEngine', 
+            'log_path':'/usr/local/WowzaStreamingEngine/logs', 
+        }
+    )
     def __init__(self, initdict=None, **kwargs):
         self._data = {}
         if initdict is None:
@@ -14,6 +22,9 @@ class Config(object):
         kwargs.update(initdict)
         for key, val in kwargs.items():
             self[key] = val
+    def _init_base_config_tree(self):
+        for key, val in self._base_config_tree.items():
+            self[key] = val.copy()
     def __setitem__(self, key, item):
         self._data[key] = item
     def __getitem__(self, key):
@@ -73,6 +84,7 @@ class Config(object):
         return str(self._data)
 
 config = Config()
+config._init_base_config_tree()
 
 def get_metadata():
     base_url = 'http://169.254.169.254/latest/meta-data'
