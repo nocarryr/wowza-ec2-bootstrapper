@@ -46,7 +46,11 @@ class Config(object):
         if isinstance(other, Config):
             self._data.update(other._data)
         else:
-            self._data.update(other)
+            for key, item in other.items():
+                if key in self and isinstance(self[key], Config):
+                    self[key].update(item)
+                else:
+                    self[key] = item
     def setdefault(self, key, default):
         self._data.setdefault(key, default)
     def add_config(self, key, initdict=None, **kwargs):
