@@ -21,6 +21,7 @@
     <Source>wowza_ec2_bootstrapper/config.py</Source>
     <Source>wowza_ec2_bootstrapper/utils.py</Source>
     <Source>wowza_ec2_bootstrapper/actions/logsync.py</Source>
+    <Source>wowza_ec2_bootstrapper/actions/set_config.py</Source>
   </Sources>
   <Forms/>
   <Translations/>
