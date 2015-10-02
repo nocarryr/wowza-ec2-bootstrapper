@@ -26,21 +26,26 @@ def get_field_names():
         fields = ['_'.join(field.split('-')) for field in fields]
         return fields
     
-def get_fields():
-    field_names = ['timestamp']
-    field_names.extend(get_field_names())
+def get_fields(field_names=None):
+    if field_names is None:
+        field_names = get_field_names()
+    elif isinstance(field_names, basestring):
+        field_names = field_names.split(',')
+    if 'timestamp' not in field_names:
+        field_names = ['timestamp'] + field_names
     field_types = ['REAL' if fname == 'timestamp' else 'TEXT' for fname in field_names]
-    return zip(field_names, field_types)
+    return field_names, field_types
     
 class DbLogger(object):
     def __init__(self, **kwargs):
         filename = kwargs.get('filename')
         if filename is None:
             filename = os.path.expanduser('~/wowzalog.db')
-        fields = kwargs.get('fields')
-        if fields is None:
-            fields = get_fields()
-        self.fields = fields
+        field_names = kwargs.get('field_names')
+        field_types = kwargs.get('field_types')
+        if field_types is None:
+            field_names, field_types = get_fields(field_names)
+        self.field_names, self.field_types = field_names, field_types
         self.filename = filename
         self.table_name = None
         self.queue = collections.deque()
@@ -60,7 +65,8 @@ class DbLogger(object):
         if tbl_name == self.table_name:
             return
         self.table_name = tbl_name
-        field_str = ','.join([' '.join(f) for f in self.fields])
+        fnames, ftypes = self.field_names, self.field_types
+        field_str = ','.join([' '.join(f) for f in zip(fnames, ftypes)])
         stmt = 'create table %s (%s)' % (tbl_name, field_str)
         print(stmt)
         conn = self.get_connection()
@@ -75,10 +81,11 @@ class DbLogger(object):
         if self.table_name is None:
             self.create_table()
         line = line.strip('\n')
-        v = ','.join(['?'] * len(self.fields))
+        v = ','.join(['?'] * len(self.field_names))
         stmt = 'insert into %s values (%s)' % (self.table_name, v)
-        entry = [ts]
-        entry.extend(line.split('\t'))
+        entry = line.split('\t')
+        i = self.field_names.index('timestamp')
+        entry.insert(i, ts)
         with self.entry_lock:
             self.queue.append((stmt, entry))
             self.need_write.set()
