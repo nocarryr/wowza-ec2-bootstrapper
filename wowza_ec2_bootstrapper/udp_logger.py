@@ -5,6 +5,7 @@ import time
 import datetime
 import threading
 import collections
+import traceback
 from SocketServer import UDPServer, BaseRequestHandler
 import sqlite3
 
@@ -53,7 +54,8 @@ class DbLogger(object):
         self.entry_lock = threading.Lock()
         self.db_thread = DbThread(self)
         self.db_thread.start()
-        self.db_thread._running.wait()
+        if self.db_thread.exception is None:
+            self.db_thread._running.wait()
     def stop(self):
         self.db_thread.stop()
     def get_connection(self):
@@ -101,6 +103,7 @@ class DbThread(threading.Thread):
         self.db_logger = db_logger
         self._running = threading.Event()
         self._stopped = threading.Event()
+        self.exception = None
     def run(self):
         self._running.set()
         need_write = self.db_logger.need_write
@@ -108,14 +111,20 @@ class DbThread(threading.Thread):
             need_write.wait()
             if not self._running.is_set():
                 break
-            self.commit_entries()
+            try:
+                self.commit_entries()
+            except Exception as e:
+                self.exception = e
+                self.exception_tb = traceback.format_exc()
+                self._running.clear()
+                print(self.exception_tb)
+        print('DbThread stopped')
         self._stopped.set()
     def stop(self):
         print('DbThread stopping..')
         self._running.clear()
         self.db_logger.need_write.set()
         self._stopped.wait()
-        print('DbThread stopped')
     def commit_entries(self):
         db = self.db_logger
         def get_entries():
