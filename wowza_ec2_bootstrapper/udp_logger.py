@@ -68,7 +68,7 @@ class DbLogger(object):
             return
         self.table_name = tbl_name
         fnames, ftypes = self.field_names, self.field_types
-        field_str = ','.join([' '.join(f) for f in zip(fnames, ftypes)])
+        field_str = ', '.join(['"%s" %s' % f for f in zip(fnames, ftypes)])
         stmt = 'create table %s (%s)' % (tbl_name, field_str)
         print(stmt)
         conn = self.get_connection()
