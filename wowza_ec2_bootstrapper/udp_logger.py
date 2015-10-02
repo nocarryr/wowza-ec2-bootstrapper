@@ -7,7 +7,10 @@ import threading
 import collections
 import traceback
 from SocketServer import UDPServer, BaseRequestHandler
-import sqlite3
+
+from tinydb import TinyDB
+from tinydb.storages import JSONStorage
+from tinydb.middlewares import CachingMiddleware
 
 WOWZA_ROOT = '/usr/local/WowzaStreamingEngine'
 
@@ -34,24 +37,15 @@ def get_fields(field_names=None):
         field_names = field_names.split(',')
     if 'timestamp' not in field_names:
         field_names = ['timestamp'] + field_names
-    if 'pk' not in field_names:
-        field_names = ['pk'] + field_names
-    d = {'timestamp':'REAL', 'pk':'INTEGER PRIMARY KEY'}
-    field_types = [d.get(fname, 'TEXT') for fname in field_names]
-    return field_names, field_types
+    return field_names
     
 class DbLogger(object):
     def __init__(self, **kwargs):
         filename = kwargs.get('filename')
         if filename is None:
-            filename = os.path.expanduser('~/wowzalog.db')
-        field_names = kwargs.get('field_names')
-        field_types = kwargs.get('field_types')
-        if field_types is None:
-            field_names, field_types = get_fields(field_names)
-        self.field_names, self.field_types = field_names, field_types
+            filename = os.path.expanduser('~/wowzalog.json.db')
+        self.field_names = get_fields(kwargs.get('field_names'))
         self.filename = filename
-        self.table_name = None
         self.queue = collections.deque()
         self.need_write = threading.Event()
         self.entry_lock = threading.Lock()
@@ -59,60 +53,31 @@ class DbLogger(object):
         self.db_thread.start()
         if self.db_thread.exception is None:
             self.db_thread._running.wait()
+    @property
+    def db(self):
+        return TinyDB(self.filename, storage=CachingMiddleware(JSONStorage))
     def stop(self):
         self.db_thread.stop()
-    def get_connection(self):
-        return sqlite3.connect(self.filename)
-    def check_table(self, tbl_name):
-        if not os.path.exists(self.filename):
-            return False
-        conn = self.get_connection()
-        stmt = 'SELECT name FROM sqlite_master WHERE type="table" AND name=%s' % (tbl_name)
-        c = conn.execute(stmt)
-        r = c.fetchall()
-        conn.close()
-        if not r:
-            return False
-        return True
-    def create_table(self, tbl_name=None):
-        if tbl_name is None:
-            now = datetime.datetime.utcnow()
-            tbl_name = now.strftime('"%Y%m%d"')
-        if tbl_name == self.table_name:
-            return
-        self.table_name = tbl_name
-        if self.check_table(tbl_name):
-            return
-        fnames, ftypes = self.field_names, self.field_types
-        field_str = ', '.join(['"%s" %s' % f for f in zip(fnames, ftypes)])
-        stmt = 'create table %s (%s)' % (tbl_name, field_str)
-        print(stmt)
-        conn = self.get_connection()
-        with conn:
-            conn.execute(stmt)
     def add_entry(self, line, ts=None):
         if ts is None:
             ts = time.time()
         t = self.db_thread
         if not t._running.is_set() and self.need_write.is_set():
             return
-        if self.table_name is None:
-            self.create_table()
-        line = line.strip('\n')
-        f = ', '.join(['"%s"' % (fname) for fname in self.field_names if fname != 'pk'])
-        v = ','.join(['?'] * len(f.split(',')))
-        stmt = 'insert into %s(%s) values (%s)' % (self.table_name, f, v)
-        entry = line.split('\t')
-        i = self.field_names.index('timestamp')
-        entry.insert(i, ts)
         with self.entry_lock:
-            self.queue.append((stmt, entry))
+            self.queue.append((line, ts))
             self.need_write.set()
     def commit_entries(self, *entries):
-        conn = self.get_connection()
-        with conn:
-            for stmt, entry in entries:
-                conn.execute(stmt, entry)
+        field_names = self.field_names
+        ts_index = field_names.index('timestamp')
+        print 'open db'
+        with self.db as db:
+            for line, ts in entries:
+                entry = line.strip('\n').split('\t')
+                entry.insert(ts_index, ts)
+                entry = {fname:val for fname, val in zip(field_names, entry)}
+                db.insert(entry)
+        print 'close db (%s entries)' % (len(entries))
         
 class DbThread(threading.Thread):
     def __init__(self, db_logger):
