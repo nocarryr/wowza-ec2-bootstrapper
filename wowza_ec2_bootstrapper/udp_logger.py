@@ -86,7 +86,7 @@ class DbLogger(object):
         conn = self.get_connection()
         with conn:
             for stmt, entry in entries:
-                conn.exectute(stmt, entry)
+                conn.execute(stmt, entry)
         
 class DbThread(threading.Thread):
     def __init__(self, db_logger):
