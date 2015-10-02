@@ -34,7 +34,10 @@ def get_fields(field_names=None):
         field_names = field_names.split(',')
     if 'timestamp' not in field_names:
         field_names = ['timestamp'] + field_names
-    field_types = ['REAL' if fname == 'timestamp' else 'TEXT' for fname in field_names]
+    if 'pk' not in field_names:
+        field_names = ['pk'] + field_names
+    d = {'timestamp':'REAL', 'pk':'INTEGER PRIMARY KEY'}
+    field_types = [d.get(fname, 'TEXT') for fname in field_names]
     return field_names, field_types
     
 class DbLogger(object):
@@ -83,8 +86,9 @@ class DbLogger(object):
         if self.table_name is None:
             self.create_table()
         line = line.strip('\n')
-        v = ','.join(['?'] * len(self.field_names))
-        stmt = 'insert into %s values (%s)' % (self.table_name, v)
+        f = ', '.join(['"%s"' % (fname) for fname in self.field_names if fname != 'pk'])
+        v = ','.join(['?'] * len(f.split(',')))
+        stmt = 'insert into %s(%s) values (%s)' % (self.table_name, f, v)
         entry = line.split('\t')
         i = self.field_names.index('timestamp')
         entry.insert(i, ts)
@@ -193,7 +197,7 @@ def test(test_sock=False, **kwargs):
     def build_entry(i):
         ts = time.time()
         dt = datetime.datetime.utcfromtimestamp(ts)
-        e = ['-'] * (len(server.db.field_names) - 1)
+        e = ['-'] * (len(server.db.field_names) - 2)
         e[0] = dt.strftime('%Y-%m-%d')
         e[1] = dt.strftime('%H:%M:%S')
         e[2] = 'UTC'
