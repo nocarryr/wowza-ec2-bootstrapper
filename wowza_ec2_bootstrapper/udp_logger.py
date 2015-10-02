@@ -144,7 +144,7 @@ class WowzaUDPServer(UDPServer):
         host = kwargs.get('host', '127.0.0.1')
         port = int(kwargs.get('port', 8881))
         UDPServer.__init__(self, (host, port), WowzaHandler)
-        self.db = DbLogger()
+        self.db = DbLogger(**kwargs)
     def add_entry(self, line, ts=None):
         self.db.add_entry(line, ts)
     def server_close(self):
@@ -158,11 +158,15 @@ class WowzaHandler(BaseRequestHandler):
         print(data)
         self.server.add_entry(data, ts=now)
         
-if __name__ == '__main__':
-    server = WowzaUDPServer()
+def main(**kwargs):
+    server = WowzaUDPServer(**kwargs)
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.daemon = True
     server_thread.start()
+    return server, server_thread
+
+def main_loop(**kwargs):
+    server, server_thread = main(**kwargs)
     while True:
         try:
             time.sleep(1.)
@@ -170,3 +174,39 @@ if __name__ == '__main__':
             break
     server.shutdown()
     server.server_close()
+    return server, server_thread
+
+def test(test_sock=False, **kwargs):
+    import socket
+    num_entries = 10
+    kwargs.setdefault('field_names', 'date,time,tz,x_event,x_category,x_severity,x_status,x_ctx,x_comment,x_vhost,x_app,x_appinst,x_duration,s_ip,s_port,s_uri,c_ip,c_proto,c_referrer,c_user_agent,c_client_id,cs_bytes,sc_bytes,x_stream_id,x_spos,cs_stream_bytes,sc_stream_bytes,x_sname,x_sname_query,x_file_name,x_file_ext,x_file_size,x_file_length,x_suri,x_suri_stem,x_suri_query,cs_uri_stem,cs_uri_query')
+    server, server_thread = main(**kwargs)
+    def build_entry(i):
+        ts = time.time()
+        dt = datetime.datetime.utcfromtimestamp(ts)
+        e = ['-'] * (len(server.db.field_names) - 1)
+        e[0] = dt.strftime('%Y-%m-%d')
+        e[1] = dt.strftime('%H:%M:%S')
+        e[2] = 'UTC'
+        e[3] = str(i)
+        e = '\t'.join(e)
+        return e + '\n', ts
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    addr = server.server_address
+    i = 0
+    try:
+        while i < num_entries:
+            e, ts = build_entry(i)
+            print('adding entry %s' % (i))
+            if test_sock:
+                sock.sendto(e, addr)
+            else:
+                server.add_entry(e, ts)
+            time.sleep(.2)
+            i += 1
+    finally:
+        server.shutdown()
+        server.server_close()
+
+if __name__ == '__main__':
+    main_loop()
