@@ -146,7 +146,6 @@ class WowzaHandler(BaseRequestHandler):
     def handle(self):
         now = time.time()
         data = self.request[0]
-        print(data)
         self.server.add_entry(data, ts=now)
         
 def main(**kwargs):
@@ -167,9 +166,9 @@ def main_loop(**kwargs):
     server.server_close()
     return server, server_thread
 
-def test(test_sock=False, **kwargs):
+def test(test_sock=False, timeout=.2, **kwargs):
     import socket
-    num_entries = 10
+    num_entries = 30
     kwargs.setdefault('field_names', 'date,time,tz,x_event,x_category,x_severity,x_status,x_ctx,x_comment,x_vhost,x_app,x_appinst,x_duration,s_ip,s_port,s_uri,c_ip,c_proto,c_referrer,c_user_agent,c_client_id,cs_bytes,sc_bytes,x_stream_id,x_spos,cs_stream_bytes,sc_stream_bytes,x_sname,x_sname_query,x_file_name,x_file_ext,x_file_size,x_file_length,x_suri,x_suri_stem,x_suri_query,cs_uri_stem,cs_uri_query')
     server, server_thread = main(**kwargs)
     def build_entry(i):
@@ -193,7 +192,7 @@ def test(test_sock=False, **kwargs):
                 sock.sendto(e, addr)
             else:
                 server.add_entry(e, ts)
-            time.sleep(.2)
+            time.sleep(timeout)
             i += 1
     finally:
         server.shutdown()
