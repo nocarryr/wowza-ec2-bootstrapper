@@ -63,13 +63,26 @@ class DbLogger(object):
         self.db_thread.stop()
     def get_connection(self):
         return sqlite3.connect(self.filename)
+    def check_table(self, tbl_name):
+        if not os.path.exists(self.filename):
+            return False
+        conn = self.get_connection()
+        stmt = 'SELECT name FROM sqlite_master WHERE type="table" AND name=%s' % (tbl_name)
+        c = conn.execute(stmt)
+        r = c.fetchall()
+        conn.close()
+        if not r:
+            return False
+        return True
     def create_table(self, tbl_name=None):
         if tbl_name is None:
             now = datetime.datetime.utcnow()
-            tbl_name = now.strftime('"%Y%m%d_%H%M%S"')
+            tbl_name = now.strftime('"%Y%m%d"')
         if tbl_name == self.table_name:
             return
         self.table_name = tbl_name
+        if self.check_table(tbl_name):
+            return
         fnames, ftypes = self.field_names, self.field_types
         field_str = ', '.join(['"%s" %s' % f for f in zip(fnames, ftypes)])
         stmt = 'create table %s (%s)' % (tbl_name, field_str)
