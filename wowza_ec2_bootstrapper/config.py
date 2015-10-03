@@ -157,6 +157,8 @@ except RequestException:
     config.is_ec2_instance = False
 except HTTPError:
     config.is_ec2_instance = False
+except AssertionError:
+    config.is_ec2_instance = False
 else:
     config.is_ec2_instance = True
 
