@@ -29,12 +29,13 @@ class BaseAction(object):
         BaseAction.all_actions.append(action)
         return action
     def __call__(self):
-        r = self.do_action(**self.kwargs)
-        if not r:
-            self._failed = True
-        self._completed = True
         if BaseAction.action_iter is None:
             BaseAction.action_iter = iter(BaseAction.all_actions)
+        elif self.__class__ is not BaseAction:
+            r = self.do_action(**self.kwargs)
+            if not r:
+                self._failed = True
+            self._completed = True
         try:
             next_action = next(BaseAction.action_iter)
         except StopIteration:
