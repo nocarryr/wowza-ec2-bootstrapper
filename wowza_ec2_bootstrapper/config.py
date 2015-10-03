@@ -1,3 +1,4 @@
+import os
 import json
 import base64
 
@@ -5,6 +6,8 @@ import boto3
 import requests
 from requests.exceptions import RequestException
 from requests.packages.urllib3.exceptions import HTTPError
+
+CONF_FILENAME = os.path.expanduser('~/.wowza_ec2_conf.json')
 
 class Config(object):
     _base_config_tree = dict(
@@ -78,13 +81,60 @@ class Config(object):
         c = Config(initdict, **kwargs)
         self[key] = c
         return c
+    def to_json(self, filename=None, **kwargs):
+        d = self._serialize()
+        s = json.dumps(d, **kwargs)
+        if filename is None:
+            filename = CONF_FILENAME
+        with open(filename, 'w') as f:
+            f.write(s)
+        return s
+    @classmethod
+    def from_json(cls, **kwargs):
+        s = kwargs.get('json')
+        fn = kwargs.get('filename')
+        url = kwargs.get('url')
+        data = None
+        if s is None:
+            if fn is not None:
+                with open(fn, 'r') as f:
+                    s = f.read()
+            elif url is not None:
+                r = requests.get(url)
+                data = r.json()
+        if data is None:
+            data = json.loads(s)
+        return cls._deserialize(data)
+    def _serialize(self):
+        d = {'__class__':'Config'}
+        for key, val in self.items():
+            if isinstance(val, Config):
+                val = val._serialize()
+            d[key] = val
+        return d
+    @classmethod
+    def _deserialize(cls, data):
+        if '__class__' in data:
+            del data['__class__']
+        conf_dict = {}
+        for key, val in data.copy().items():
+            if isinstance(val, dict) and val.get('__class__') == 'Config':
+                conf_dict[key] = val
+                del data[key]
+        obj = cls(data)
+        for key, val in conf_dict.items():
+            obj[key] = cls._deserialize(val)
+        return obj
     def __repr__(self):
         return repr(self._data)
     def __str__(self):
         return str(self._data)
 
-config = Config()
-config._init_base_config_tree()
+if os.path.exists(CONF_FILENAME):
+    config = Config.from_json(filename=CONF_FILENAME)
+else:
+    config = Config()
+    config._init_base_config_tree()
 
 def get_metadata():
     base_url = 'http://169.254.169.254/latest/meta-data'
@@ -151,20 +201,23 @@ def get_web_conf():
     data = r.json()
     config.update(data)
 
-try:
-    get_metadata()
-except RequestException:
-    config.is_ec2_instance = False
-except HTTPError:
-    config.is_ec2_instance = False
-except AssertionError:
-    config.is_ec2_instance = False
-else:
-    config.is_ec2_instance = True
+if not os.path.exists(CONF_FILENAME):
+    try:
+        get_metadata()
+    except RequestException:
+        config.is_ec2_instance = False
+    except HTTPError:
+        config.is_ec2_instance = False
+    except AssertionError:
+        config.is_ec2_instance = False
+    else:
+        config.is_ec2_instance = True
 
-from wowza_ec2_bootstrapper import awsconfig
-awsconfig.build_config_file()
+    from wowza_ec2_bootstrapper import awsconfig
+    awsconfig.build_config_file()
 
-get_userdata()
-get_tags()
-get_web_conf()
+    get_userdata()
+    get_tags()
+    get_web_conf()
+    
+    config.to_json(indent=2)
