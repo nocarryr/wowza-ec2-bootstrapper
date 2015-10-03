@@ -87,6 +87,10 @@ class BaseAction(object):
         d.update(self.kwargs)
         return d
 
+from associate_eip import AssociateEIP
+from logsync import LogSyncUp, LogSyncDown
+from set_config import SetConfig
+
 def build_from_config():
     return BaseAction.from_json(data=config.action_data['actions'])
     
