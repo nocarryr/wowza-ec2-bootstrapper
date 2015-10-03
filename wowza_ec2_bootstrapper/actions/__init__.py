@@ -63,17 +63,20 @@ class BaseAction(object):
         s = kwargs.get('json')
         fn = kwargs.get('filename')
         url = kwargs.get('url')
-        data = None
-        if s is None:
-            if fn is not None:
-                with open(fn, 'r') as f:
-                    s = f.read()
-            elif url is not None:
-                r = requests.get(url)
-                data = r.json()
+        data = kwargs.get('data')
         if data is None:
-            data = json.loads(s)
-        for action_kwargs in data['actions']:
+            if s is None:
+                if fn is not None:
+                    with open(fn, 'r') as f:
+                        s = f.read()
+                elif url is not None:
+                    r = requests.get(url)
+                    data = r.json()
+            if data is None:
+                data = json.loads(s)
+        if isinstance(data, dict):
+            data = data['actions']
+        for action_kwargs in data:
             cls.create(**action_kwargs)
         return BaseAction
     def _serialize(self):
@@ -83,3 +86,16 @@ class BaseAction(object):
         d = {'action_name':action_name}
         d.update(self.kwargs)
         return d
+
+def build_from_config():
+    return BaseAction.from_json(data=config.action_data['actions'])
+    
+def save_to_config():
+    l = []
+    for action in BaseAction.all_actions:
+        l.append(action._serialize())
+    config.action_data['actions'] = l
+    config.to_json(indent=2)
+
+if config.action_data.get('actions'):
+    build_from_config()

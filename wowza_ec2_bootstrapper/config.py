@@ -16,7 +16,8 @@ class Config(object):
         wowza={
             'root_path':'/usr/local/WowzaStreamingEngine', 
             'log_path':'/usr/local/WowzaStreamingEngine/logs', 
-        }
+        }, 
+        action_data={}, 
     )
     def __init__(self, initdict=None, **kwargs):
         self._data = {}
