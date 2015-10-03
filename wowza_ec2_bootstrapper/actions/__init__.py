@@ -1,3 +1,7 @@
+import json
+
+import requests
+
 from wowza_ec2_bootstrapper.config import config
 
 class BaseAction(object):
@@ -6,6 +10,8 @@ class BaseAction(object):
     all_complete = False
     config = config
     def __init__(self, **kwargs):
+        if not hasattr(self, 'action_name'):
+            self.action_name = kwargs['action_name']
         self.kwargs = kwargs
         self._completed = False
         self._failed = False
@@ -45,4 +51,35 @@ class BaseAction(object):
             next_action()
     def do_action(self):
         raise NotImplementedError('must be defined in subclass')
-    
+    @classmethod
+    def to_json(cls, **kwargs):
+        l = []
+        for action in cls.all_actions:
+            l.append(action._serialize)
+        d = {'actions':l}
+        return json.dumps(d, **kwargs)
+    @classmethod
+    def from_json(cls, **kwargs):
+        s = kwargs.get('json')
+        fn = kwargs.get('filename')
+        url = kwargs.get('url')
+        data = None
+        if s is None:
+            if fn is not None:
+                with open(fn, 'r') as f:
+                    s = f.read()
+            elif url is not None:
+                r = requests.get(url)
+                data = r.json()
+        if data is None:
+            data = json.loads(s)
+        for action_kwargs in data['actions']:
+            cls.create(**action_kwargs)
+        return BaseAction
+    def _serialize(self):
+        action_name = getattr(self, 'action_name', None)
+        if not action_name:
+            action_name = self.__class__.__name__
+        d = {'action_name':action_name}
+        d.update(self.kwargs)
+        return d
