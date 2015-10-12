@@ -6,11 +6,6 @@ import botocore
 from wowza_ec2_bootstrapper.actions import BaseAction
 
 class LogSyncBase(BaseAction):
-    def __init__(self, **kwargs):
-        bucket_name = kwargs.get('bucket')
-        if bucket_name is not None:
-            self.config.log_bucket_name = bucket_name
-        super(LogSyncBase, self).__init__(**kwargs)
     @property
     def s3(self):
         s3 = getattr(self, '_s3', None)
@@ -24,6 +19,9 @@ class LogSyncBase(BaseAction):
             b = self._bucket = self.get_bucket()
         return b
     def get_bucket(self):
+        bname = self.kwargs.get('bucket')
+        if bname is not None:
+            return bname
         bname = self.config.log_bucket_name
         return self.s3.Bucket(bname)
     @property
@@ -33,6 +31,9 @@ class LogSyncBase(BaseAction):
             p = self._log_path = self.get_log_path()
         return p
     def get_log_path(self):
+        p = self.kwargs.get('log_path')
+        if p is not None:
+            return p
         conf = self.config.get('wowza')
         if conf is None:
             conf = self.config.add_config('wowza')
