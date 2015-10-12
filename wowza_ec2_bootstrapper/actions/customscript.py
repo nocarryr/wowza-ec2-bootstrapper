@@ -6,6 +6,20 @@ import requests
 from wowza_ec2_bootstrapper.actions import BaseAction
 
 class CustomScript(BaseAction):
+    action_fields = dict(
+        filename={
+            'required':True, 
+            'help':'Local filename to write the script to', 
+        }, 
+        contents={
+            'required':['contents', 'url'], 
+            'help':'The script contents (as string)', 
+        }, 
+        url={
+            'required':['contents', 'url'], 
+            'help':'URL to retrieve the script contents', 
+        }, 
+    )
     def do_action(self, **kwargs):
         filename = os.path.expanduser(kwargs.get('filename'))
         contents = kwargs.get('contents')

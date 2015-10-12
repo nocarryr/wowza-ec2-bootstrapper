@@ -10,12 +10,38 @@ class BaseAction(object):
     action_iter = None
     all_complete = False
     config = config
+    __action_abstract = True
     def __init__(self, **kwargs):
         if not hasattr(self, 'action_name'):
             self.action_name = kwargs['action_name']
         self.kwargs = kwargs
         self._completed = False
         self._failed = False
+    @classmethod
+    def get_action_fields(cls, fields=None):
+        if fields is None:
+            is_root = True
+            fields = {cls:getattr(cls, 'action_fields', {})}
+        else:
+            is_root = False
+            my_fields = {}
+            for _cls, _fields in fields.items():
+                if not issubclass(cls, _cls):
+                    continue
+                my_fields.update(_fields)
+            my_fields.update(getattr(cls, 'action_fields', {}))
+            fields[cls] = my_fields
+        for _cls in cls.__subclasses__():
+            _cls.get_action_fields(fields)
+        if not is_root:
+            return fields
+        cleaned_fields = {}
+        for _cls, _fields in fields.items():
+            if getattr(_cls, '_%s__action_abstract' % (_cls.__name__), False):
+                continue
+            key = getattr(_cls, 'action_name', _cls.__name__)
+            cleaned_fields[key] = _fields
+        return cleaned_fields
     @classmethod
     def create(cls, **kwargs):
         action_name = kwargs.get('action_name')

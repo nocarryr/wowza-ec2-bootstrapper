@@ -5,6 +5,29 @@ import requests
 from wowza_ec2_bootstrapper.actions import BaseAction
 
 class SetConfig(BaseAction):
+    action_fields = dict(
+        server_license={
+            'required':False, 
+            'help':'Wowza License Key', 
+        }, 
+        users={
+            'required':False, 
+            'help':'A list of dicts containing admin user data ("name", "password" and "group")'
+        }, 
+        publish_users={
+            'required':False, 
+            'help':'A list of dicts containing publisher users ("name", "password")'
+        }, 
+        conf_files={
+            'required':False, 
+            'help':
+                '''A list of dicts for conf files to replace containing:
+                    "path" : conf filename relative to Wowza root
+                    "content" : contents for the file (if not given, "url" must be supplied)
+                    "url": url to retrieve the contents for the file
+                '''
+        }, 
+    )
     @property
     def conf_path(self):
         p = getattr(self, '_conf_path', None)

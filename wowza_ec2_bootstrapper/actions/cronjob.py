@@ -4,6 +4,21 @@ from wowza_ec2_bootstrapper.actions import BaseAction
 
 class CronJob(BaseAction):
     cron_fields = ['minute', 'hour', 'dom', 'mon', 'dow']
+    action_fields = dict(
+        user={
+            'required':False, 
+            'default':None, 
+            'help':'User to attach the crontab to (Leave blank for current user)', 
+        }, 
+        fields={
+            'required':True, 
+            'help':'Time fields for the cron job (m h dom mon dow)', 
+        }, 
+        command={
+            'required':True, 
+            'help':'The command to be inserted', 
+        }
+    )
     def do_action(self, **kwargs):
         user = kwargs.get('user')
         if user == 'root':

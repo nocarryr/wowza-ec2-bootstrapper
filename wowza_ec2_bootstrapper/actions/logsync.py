@@ -6,6 +6,17 @@ import botocore
 from wowza_ec2_bootstrapper.actions import BaseAction
 
 class LogSyncBase(BaseAction):
+    action_fields = dict(
+        bucket={
+            'required':True, 
+            'help':'Name of S3 Bucket to sync with', 
+        }, 
+        log_path={
+            'required':False, 
+            'help':'Local path of log files. Leave blank to use system default', 
+        }, 
+    )
+    __action_abstract = True
     @property
     def s3(self):
         s3 = getattr(self, '_s3', None)

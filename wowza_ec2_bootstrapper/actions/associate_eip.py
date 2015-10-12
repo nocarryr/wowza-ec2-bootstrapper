@@ -15,6 +15,16 @@ def is_ipv4(address):
     return True
     
 class AssociateEIP(BaseAction):
+    action_fields = dict(
+        address={
+            'required':['address', 'allocation_id'], 
+            'help':'Either an IPv4 IP address or a hostname that can be used to retrieve it', 
+        }, 
+        allocation_id={
+            'required':['address', 'allocation_id'], 
+            'help':'The allocation_id of the Elastic IP', 
+        }, 
+    )
     def do_action(self, **kwargs):
         ec2 = boto3.client('ec2')
         inst_id = self.config.instance_metadata.instance_id
