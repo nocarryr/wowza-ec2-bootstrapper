@@ -5,6 +5,7 @@ from base import BaseAction
 from associate_eip import AssociateEIP
 from logsync import LogSyncUp, LogSyncDown
 from set_config import SetConfig
+from customscript import CustomScript
 from cronjob import CronJob
 
 def build_from_config():
