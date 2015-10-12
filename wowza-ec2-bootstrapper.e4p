@@ -24,6 +24,7 @@
     <Source>wowza_ec2_bootstrapper/actions/set_config.py</Source>
     <Source>wowza_ec2_bootstrapper/udp_logger.py</Source>
     <Source>wowza_ec2_bootstrapper/actions/base.py</Source>
+    <Source>wowza_ec2_bootstrapper/actions/cronjob.py</Source>
   </Sources>
   <Forms/>
   <Translations/>

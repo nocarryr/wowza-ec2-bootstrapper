@@ -5,6 +5,7 @@ from base import BaseAction
 from associate_eip import AssociateEIP
 from logsync import LogSyncUp, LogSyncDown
 from set_config import SetConfig
+from cronjob import CronJob
 
 def build_from_config():
     return BaseAction.from_json(data=config.action_data['actions'])
