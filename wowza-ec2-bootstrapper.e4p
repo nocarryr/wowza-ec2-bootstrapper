@@ -26,6 +26,8 @@
     <Source>wowza_ec2_bootstrapper/actions/base.py</Source>
     <Source>wowza_ec2_bootstrapper/actions/cronjob.py</Source>
     <Source>wowza_ec2_bootstrapper/actions/customscript.py</Source>
+    <Source>wowza_ec2_bootstrapper/configbuilder/__init__.py</Source>
+    <Source>wowza_ec2_bootstrapper/configbuilder/application.py</Source>
   </Sources>
   <Forms/>
   <Translations/>

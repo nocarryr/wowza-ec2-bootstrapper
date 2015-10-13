@@ -1,0 +1,75 @@
+{% macro render_conf_obj(key, obj) -%}
+    {% if obj is mapping %}
+        {{ conf_dict(key, obj) }}
+    {% elif obj is sequence and obj is not string %}
+        {{ conf_list(key, obj) }}
+    {% elif obj is iterable and obj is not string %}
+        {{ conf_list(key, obj) }}
+    {% else %}
+        {{ conf_var(key, obj) }}
+    {% endif %}
+{%- endmacro %}
+
+{% macro conf_section(obj) -%}
+    {% for conf_key, conf_val in obj.items() %}
+    {% if conf_key in obj.conf_sections %}
+        {# {% with config_obj = conf_val %}{% include "config_obj_include.html" with context %}{% endwith %} #}
+        <li class="config-section">
+            <h4>{{ conf_key }}</h4>
+            <ul>
+                {{ conf_section(conf_val) }}
+            </ul>
+        </li>
+    {% else %}
+        {{ render_conf_obj(conf_key, conf_val) }}
+    {% endif %}
+    {# {% elif conf_val is mapping %}
+        {{ conf_dict(conf_key, conf_val) }}
+    {% elif conf_val is sequence and conf_val is not string %}
+        {{ conf_list(conf_key, conf_obj) }}
+    {% elif val is iterable and val is not string %}
+        {{ conf_list(conf_key, conf_obj) }}
+    {% else %}
+        {{ conf_var(conf_key, conf_obj) }}
+    {% endif %} #}
+    {% endfor %}
+{%- endmacro %}
+
+{% macro conf_dict(key, obj) -%}
+    <li class="config-dict">
+        {% if key %}<h4>{{ key }}</h4>{% endif %}
+        <table>
+            <tbody>
+            {% for dkey, dval in obj.items() %}
+                <tr>
+                    <td class="config-dict-key">{{ dkey }}</td>
+                    <td class="config-dict-val">{{ render_conf_obj(dkey, dval) }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </li>
+{%- endmacro %}
+
+{% macro conf_list(key, obj) -%}
+    <li class="config-list">
+        {% if key %}<h4>{{ key }}</h4>{% endif %}
+        <ul>
+        {% for item in obj %}
+            {# <li class="config-list-item">{{ render_conf_obj(None, item) }}</li> #}
+            {{ render_conf_obj(None, item) }}
+        {% endfor %}
+        </ul>
+    </li>
+{%- endmacro %}
+
+{% macro conf_var(key, obj) -%}
+    <li class="config-var">
+        {% if key %}<h4>{{ key }}</h4>{% endif %}
+        <p>{{ obj }}</p>
+    </li>
+{%- endmacro %}
+
+<ul class="config-obj">
+    {{ conf_section(config_obj) }}
+</ul>

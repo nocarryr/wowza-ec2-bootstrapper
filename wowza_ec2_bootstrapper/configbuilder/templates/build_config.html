@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block page_title %}Build Config{% endblock %}
+{% block body %}
+<form action="{{ url_for('build_config') }}" method="post">
+    <label for="conf_json">Intitial JSON Data</label>
+    <input type="textarea" name="conf_json" id="conf_json">
+    <input type="submit" value="Build">
+</form>
+{% endblock %}

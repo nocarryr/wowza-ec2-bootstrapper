@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block page_title %}Edit Config{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/config_obj.css') }}">
+{% endblock %}
+
+{% block body %}
+{% include "config_obj_include.html" %}
+{% endblock %}
