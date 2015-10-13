@@ -20,6 +20,7 @@ class Config(object):
         action_data={}, 
     )
     def __init__(self, initdict=None, **kwargs):
+        self._conf_filename = kwargs.get('_conf_filename', CONF_FILENAME)
         self._data = {}
         if initdict is None:
             initdict = {}
@@ -30,6 +31,9 @@ class Config(object):
         for key, val in self._base_config_tree.items():
             self[key] = val.copy()
     def __setitem__(self, key, item):
+        if key == '_conf_filename':
+            self._conf_filename = item
+            return
         self._data[key] = item
     def __getitem__(self, key):
         return self._data[key]
@@ -39,7 +43,7 @@ class Config(object):
         raise AttributeError('%r object has no attribute %r' %
                              (self.__class__, attr))
     def __setattr__(self, attr, item):
-        if attr == '_data':
+        if attr in ['_conf_filename', '_data']:
             super(Config, self).__setattr__(attr, item)
         else:
             self._data[attr] = item
@@ -86,7 +90,9 @@ class Config(object):
         d = self._serialize()
         s = json.dumps(d, **kwargs)
         if filename is None:
-            filename = CONF_FILENAME
+            filename = self._conf_filename
+        if filename is None:
+            return
         with open(filename, 'w') as f:
             f.write(s)
         return s
@@ -94,6 +100,8 @@ class Config(object):
     def from_json(cls, **kwargs):
         s = kwargs.get('json')
         fn = kwargs.get('filename')
+        if fn is None:
+            fn = kwargs.get('_conf_filename')
         url = kwargs.get('url')
         data = None
         if s is None:
@@ -104,8 +112,11 @@ class Config(object):
                 r = requests.get(url)
                 data = r.json()
         if data is None:
-            data = json.loads(s)
-        return cls._deserialize(data)
+            if s is None:
+                data = {}
+            else:
+                data = json.loads(s)
+        return cls._deserialize(data, _conf_filename=fn)
     def _serialize(self):
         d = {'__class__':'Config'}
         for key, val in self.items():
@@ -114,7 +125,7 @@ class Config(object):
             d[key] = val
         return d
     @classmethod
-    def _deserialize(cls, data):
+    def _deserialize(cls, data, **kwargs):
         if '__class__' in data:
             del data['__class__']
         conf_dict = {}
@@ -122,7 +133,7 @@ class Config(object):
             if isinstance(val, dict) and val.get('__class__') == 'Config':
                 conf_dict[key] = val
                 del data[key]
-        obj = cls(data)
+        obj = cls(data, **kwargs)
         for key, val in conf_dict.items():
             obj[key] = cls._deserialize(val)
         return obj
