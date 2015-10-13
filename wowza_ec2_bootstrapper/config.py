@@ -97,10 +97,9 @@ class Config(object):
         s = json.dumps(d, **kwargs)
         if filename is None:
             filename = self._conf_filename
-        if filename is None:
-            return
-        with open(filename, 'w') as f:
-            f.write(s)
+        if filename:
+            with open(filename, 'w') as f:
+                f.write(s)
         return s
     @classmethod
     def from_json(cls, **kwargs):
