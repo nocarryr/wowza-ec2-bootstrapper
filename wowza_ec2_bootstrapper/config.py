@@ -151,6 +151,8 @@ class Config(object):
 def build_config(build_default=True, **kwargs):
     if build_default:
         kwargs.setdefault('_conf_filename', CONF_FILENAME)
+        if not os.path.exists(kwargs.get('_conf_filename')):
+            kwargs.setdefault('json', '{}')
     _config = Config.from_json(**kwargs)
     conf_keys = set(Config._base_config_tree.keys())
     if conf_keys & set(_config.keys()) != conf_keys:
