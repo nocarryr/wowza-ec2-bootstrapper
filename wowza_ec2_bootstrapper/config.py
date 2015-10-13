@@ -29,7 +29,7 @@ class Config(object):
             self[key] = val
     def _init_base_config_tree(self):
         for key, val in self._base_config_tree.items():
-            self[key] = val.copy()
+            self.add_config(key, val.copy())
     def __setitem__(self, key, item):
         if key == '_conf_filename':
             self._conf_filename = item
