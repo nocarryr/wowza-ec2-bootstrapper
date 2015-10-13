@@ -1,9 +1,7 @@
 import os
 
-from wowza_ec2_bootstrapper.config import config
-
     
-def build_config_file():
+def build_config_file(config):
     if not config.is_ec2_instance:
         return
     fn = os.path.expanduser('~/.aws/config')

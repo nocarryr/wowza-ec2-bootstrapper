@@ -142,13 +142,20 @@ class Config(object):
     def __str__(self):
         return str(self._data)
 
-if os.path.exists(CONF_FILENAME):
-    config = Config.from_json(filename=CONF_FILENAME)
-else:
-    config = Config()
-    config._init_base_config_tree()
+def build_config(build_default=True, **kwargs):
+    if build_default:
+        kwargs.setdefault('_conf_filename', CONF_FILENAME)
+    _config = Config.from_json(**kwargs)
+    conf_keys = set(Config._base_config_tree.keys())
+    if conf_keys & set(_config.keys()) != conf_keys:
+        _config._init_base_config_tree()
+    return _config
 
-def get_metadata():
+config = build_config()
+
+def get_metadata(_config=None):
+    if _config is None:
+        _config = config
     base_url = 'http://169.254.169.254/latest/meta-data'
     def get_item(uri):
         uri = '/'.join([base_url, uri])
@@ -159,17 +166,19 @@ def get_metadata():
         'public-hostname', 'public-ipv4']
     categories = {'_'.join(c.split('-')):c for c in root_categories}
     categories['availability_zone'] = 'placement/availability-zone'
-    mdata = config.add_config('instance_metadata')
+    mdata = _config.add_config('instance_metadata')
     for key, uri in categories.items():
         mdata[key] = get_item(uri)
     mdata['region'] = mdata['availability_zone'][:-1]
     
-def get_userdata():
-    if not config.is_ec2_instance:
-        config.instance_userdata = None
+def get_userdata(_config=None):
+    if _config is None:
+        _config = config
+    if not _config.is_ec2_instance:
+        _config.instance_userdata = None
         return
     ec2 = boto3.resource('ec2')
-    instobj = ec2.Instance(config.instance_metadata.instance_id)
+    instobj = ec2.Instance(_config.instance_metadata.instance_id)
     r = instobj.describe_attribute(Attribute='userData')
     udata = r.get('UserData', {}).get('Value')
     if udata is not None:
@@ -181,55 +190,64 @@ def get_userdata():
         if d is not None:
             udata = d
     if isinstance(udata, dict):
-        config.add_config('instance_userdata', udata)
+        _config.add_config('instance_userdata', udata)
     else:
-        config.instance_userdata = udata
+        _config.instance_userdata = udata
     
-def get_tags():
-    if not config.is_ec2_instance:
-        config.instance_tags = {}
+def get_tags(_config=None):
+    if _config is None:
+        _config = config
+    if not _config.is_ec2_instance:
+        _config.instance_tags = {}
         return
     ec2 = boto3.resource('ec2')
-    instobj = ec2.Instance(config.instance_metadata.instance_id)
+    instobj = ec2.Instance(_config.instance_metadata.instance_id)
     tags = {}
     for tag in instobj.tags:
         tags[tag['Key']] = tag['Value']
-    config.add_config('instance_tags', tags)
+    _config.add_config('instance_tags', tags)
 
-def get_web_conf():
+def get_web_conf(_config=None):
+    if _config is None:
+        _config = config
     conf_url = None
-    udata = config.instance_userdata
+    udata = _config.instance_userdata
     if isinstance(udata, dict):
         conf_url = udata.get('conf_url')
     if conf_url is None:
-        conf_url = config.instance_tags.get('conf_url')
+        conf_url = _config.instance_tags.get('conf_url')
     if conf_url is None:
         return
     if '?' not in conf_url:
-        conf_url = '?'.join([conf_url, config.instance_metadata.instance_id])
+        conf_url = '?'.join([conf_url, _config.instance_metadata.instance_id])
     r = requests.get(conf_url)
     if r.status_code != 200:
         return
     data = r.json()
-    config.update(data)
+    _config.update(data)
 
-if not os.path.exists(CONF_FILENAME):
-    try:
-        get_metadata()
-    except RequestException:
-        config.is_ec2_instance = False
-    except HTTPError:
-        config.is_ec2_instance = False
-    except AssertionError:
-        config.is_ec2_instance = False
-    else:
-        config.is_ec2_instance = True
+def set_config_defaults(_config=None):
+    if _config is None:
+        _config = config
+    if not os.path.exists(CONF_FILENAME):
+        try:
+            get_metadata(_config)
+        except RequestException:
+            _config.is_ec2_instance = False
+        except HTTPError:
+            _config.is_ec2_instance = False
+        except AssertionError:
+            _config.is_ec2_instance = False
+        else:
+            _config.is_ec2_instance = True
 
-    from wowza_ec2_bootstrapper import awsconfig
-    awsconfig.build_config_file()
+        from wowza_ec2_bootstrapper import awsconfig
+        awsconfig.build_config_file(_config)
 
-    get_userdata()
-    get_tags()
-    get_web_conf()
-    
-    config.to_json(indent=2)
+        get_userdata(_config)
+        get_tags(_config)
+        get_web_conf(_config)
+        
+        _config.to_json(indent=2)
+
+set_config_defaults()
