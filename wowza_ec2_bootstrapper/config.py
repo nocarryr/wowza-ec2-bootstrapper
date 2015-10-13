@@ -21,6 +21,7 @@ class Config(object):
     )
     def __init__(self, initdict=None, **kwargs):
         self._conf_filename = kwargs.get('_conf_filename', CONF_FILENAME)
+        self.conf_sections = set()
         self._data = {}
         if initdict is None:
             initdict = {}
@@ -35,6 +36,8 @@ class Config(object):
             self._conf_filename = item
             return
         self._data[key] = item
+        if isinstance(item, Config):
+            self.conf_sections.add(key)
     def __getitem__(self, key):
         return self._data[key]
     def __getattr__(self, attr):
@@ -43,10 +46,12 @@ class Config(object):
         raise AttributeError('%r object has no attribute %r' %
                              (self.__class__, attr))
     def __setattr__(self, attr, item):
-        if attr in ['_conf_filename', '_data']:
+        if attr in ['_conf_filename', 'conf_sections', '_data']:
             super(Config, self).__setattr__(attr, item)
         else:
             self._data[attr] = item
+            if isinstance(item, Config):
+                self.conf_sections.add(attr)
     def __len__(self):
         return self._data.__len__()
     def __iter__(self):
@@ -85,6 +90,7 @@ class Config(object):
             return c
         c = Config(initdict, **kwargs)
         self[key] = c
+        self.conf_sections.add(key)
         return c
     def to_json(self, filename=None, **kwargs):
         d = self._serialize()
