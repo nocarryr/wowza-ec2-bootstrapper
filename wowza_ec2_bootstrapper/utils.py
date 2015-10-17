@@ -59,7 +59,8 @@ def configure_named_user_mode(config, **kwargs):
             with open(self.filename, 'r') as f:
                 s = f.read()
             return s
-        def write(self, s):
+        def write(self):
+            s = '\n'.join(self.lines)
             with open(self.filename, 'w') as f:
                 f.write(s)
         
