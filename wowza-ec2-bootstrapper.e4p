@@ -28,6 +28,7 @@
     <Source>wowza_ec2_bootstrapper/actions/customscript.py</Source>
     <Source>wowza_ec2_bootstrapper/configbuilder/__init__.py</Source>
     <Source>wowza_ec2_bootstrapper/configbuilder/application.py</Source>
+    <Source>wowza_ec2_bootstrapper/actions/setup_systemd.py</Source>
   </Sources>
   <Forms/>
   <Translations/>
