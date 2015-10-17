@@ -52,7 +52,9 @@ def configure_named_user_mode(config, **kwargs):
                     line = lines[i]
                 except IndexError:
                     break
-                yield i, line
+                if search_str in line:
+                    yield i, line
+                i += 1
         def read(self):
             with open(self.filename, 'r') as f:
                 s = f.read()
