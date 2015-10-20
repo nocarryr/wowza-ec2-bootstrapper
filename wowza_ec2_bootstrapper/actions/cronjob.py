@@ -43,10 +43,11 @@ class CronJob(BaseAction):
         if isinstance(fields, list):
             fields = ' '.join(fields)
         for existing_job in cron.find_command(cmd):
-            if not existing_job.is_enabled():
+            if self.cron_slice_to_fields(existing_job) != fields:
                 continue
-            if self.cron_slice_to_fields(existing_job) == fields:
-                return True
+            if not existing_job.is_enabled():
+                existing_job.enable()
+                return existing_job
         job = cron.new(command=cmd)
         job.setall(fields)
         return job
