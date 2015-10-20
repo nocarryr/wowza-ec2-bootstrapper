@@ -1,4 +1,6 @@
 import os
+import shutil
+import datetime
 
 import boto3
 
@@ -55,11 +57,18 @@ def configure_named_user_mode(config, **kwargs):
                 if search_str in line:
                     yield i, line
                 i += 1
+        def make_backup(self):
+            p, filename = os.path.split(self.filename)
+            now = datetime.datetime.now()
+            dt_str = now.strftime('%Y%m%d_%H%M%S-%f')
+            backup_fn = '.'.join([filename, dt_str])
+            shutil.copy2(os.path.join(p, filename), os.path.join(p, backup_fn))
         def read(self):
             with open(self.filename, 'r') as f:
                 s = f.read()
             return s
         def write(self):
+            self.make_backup()
             s = '\n'.join(self.lines)
             with open(self.filename, 'w') as f:
                 f.write(s)
