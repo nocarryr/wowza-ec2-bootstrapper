@@ -51,6 +51,29 @@ TimeoutSec=300
 WantedBy=multi-user.target
 '''
 
+class UnitFile(object):
+    def __init__(self, **kwargs):
+        self.template_data = kwargs.get('template_data')
+        self.path = kwargs.get('path')
+        self.user_mode = not self.path.startswith('/etc')
+    def build_file_contents(self):
+        template = self.template
+        s = template % self.template_data
+        return s
+    def write_file(self):
+        s = self.build_file_contents()
+        filename = os.path.join(self.path, self.unit_filename)
+        with open(filename, 'w') as f:
+            f.write(s)
+
+class EngineUnitFile(UnitFile):
+    template = ENGINE_UNIT_TEMPLATE
+    unit_filename = 'WowzaStreamingEngine.service'
+
+class ManagerUnitFile(UnitFile):
+    template = MANAGER_UNIT_TEMPLATE
+    unit_filename = 'WowzaStreamingEngineManager.service'
+
 class SystemdServiceConf(BaseAction):
     action_fields = dict(
         user={'default':'root'}, 
@@ -78,14 +101,11 @@ class SystemdServiceConf(BaseAction):
             configure_named_user_mode(self.config, **template_data)
         else:
             unit_file_path = '/etc/systemd/system/'
-        engine_unit = ENGINE_UNIT_TEMPLATE % template_data
-        manager_unit = MANAGER_UNIT_TEMPLATE % template_data
-        fn = os.path.join(unit_file_path, 'WowzaStreamingEngine')
-        with open(fn, 'w') as f:
-            f.write(engine_unit)
-        fn = os.path.join(unit_file_path, 'WowzaStreamingEngineManager')
-        with open(fn, 'w') as f:
-            f.write(manager_unit)
+        unit_kwargs = dict(template_data=template_data, path=unit_file_path)
+        engine_unit = EngineUnitFile(**unit_kwargs)
+        engine_unit.write_file()
+        manager_unit = ManagerUnitFile(**unit_kwargs)
+        manager_unit.write_file()
         
         
         
