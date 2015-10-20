@@ -64,10 +64,14 @@ def configure_named_user_mode(config, **kwargs):
             backup_fn = '.'.join([filename, dt_str])
             shutil.copy2(os.path.join(p, filename), os.path.join(p, backup_fn))
         def read(self):
+            if not os.path.exists(self.filename):
+                return ''
             with open(self.filename, 'r') as f:
                 s = f.read()
             return s
         def write(self):
+            if not os.path.exists(self.filename):
+                return
             self.make_backup()
             s = '\n'.join(self.lines)
             with open(self.filename, 'w') as f:
