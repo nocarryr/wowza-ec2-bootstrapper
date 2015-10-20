@@ -59,6 +59,14 @@ class UnitFile(object):
     def build_file_contents(self):
         template = self.template
         s = template % self.template_data
+        if self.user_mode:
+            lines = [
+                line for line in s.splitlines() if (
+                    not line.startswith('User=') and
+                    not line.startswith('Group=')
+                )
+            ]
+            s = '\n'.join(lines)
         return s
     def write_file(self):
         s = self.build_file_contents()
