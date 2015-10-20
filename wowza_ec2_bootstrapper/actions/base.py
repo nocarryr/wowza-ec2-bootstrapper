@@ -8,12 +8,12 @@ from wowza_ec2_bootstrapper.config import config
 class BaseAction(object):
     __action_abstract = True
     def __init__(self, **kwargs):
-        self._root_action = kwargs.get('_root_action', self)
+        self._root_action = kwargs.pop('_root_action', self)
         if self._root_action is self:
             self._all_actions = []
             self._action_iter = None
             self._all_complete = False
-            self._config = kwargs.get('config', config)
+            self._config = kwargs.pop('config', config)
         if not hasattr(self, 'action_name'):
             self.action_name = kwargs.get('action_name', self.__class__.__name__)
         self.kwargs = kwargs
