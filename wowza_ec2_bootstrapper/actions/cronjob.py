@@ -3,7 +3,7 @@ from crontab import CronTab
 from wowza_ec2_bootstrapper.actions import BaseAction
 
 class CronJob(BaseAction):
-    cron_fields = ['minute', 'hour', 'dom', 'mon', 'dow']
+    cron_fields = ['minute', 'hour', 'dom', 'month', 'dow']
     action_fields = dict(
         user={
             'required':False, 
@@ -12,7 +12,7 @@ class CronJob(BaseAction):
         }, 
         fields={
             'required':True, 
-            'help':'Time fields for the cron job (m h dom mon dow)', 
+            'help':'Time fields for the cron job (m h dom month dow)', 
         }, 
         command={
             'required':True, 
