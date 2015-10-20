@@ -169,6 +169,7 @@ class BaseAction(object):
         root_action = None
         for action_kwargs in data:
             if root_action is not None:
+                action_kwargs = action_kwargs.copy()
                 action_kwargs.setdefault('_root_action', root_action)
             obj = cls.create(**action_kwargs)
             root_action = obj.root_action
