@@ -7,6 +7,7 @@ from logsync import LogSyncUp, LogSyncDown
 from set_config import SetConfig
 from customscript import CustomScript
 from cronjob import CronJob
+from setup_systemd import SystemdServiceConf
 
 root_action = None
 
